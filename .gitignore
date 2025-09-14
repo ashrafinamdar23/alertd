@@ -1,0 +1,47 @@
+# Binaries
+/bin/
+/out/
+/alertd
+
+# Build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go workspace files
+*.log
+*.tmp
+*.swp
+*.swo
+*.DS_Store
+
+# Coverage
+*.cover
+*.cov
+*.prof
+
+# Dependency directories
+vendor/
+
+# IDE/editor
+.vscode/
+.idea/
+*.iml
+
+# Env/config
+.env
+.env.local
+.env.*.local
+
+# Docker volumes / data
+data/
+mysql-data/
+*.db
+
+# Logs
+logs/
+*.log

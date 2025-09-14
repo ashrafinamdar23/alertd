@@ -1,6 +1,7 @@
 package logx
 
 import (
+	"log"
 	"log/slog"
 	"os"
 	"time"
@@ -54,4 +55,11 @@ func Gin(logger *slog.Logger) gin.HandlerFunc {
 			"latency_ms", lat.Milliseconds(),
 		)
 	}
+}
+
+// StdLogger adapts slog to an io.Writer-based std logger for GORM.
+type stdLogger struct{ l *slog.Logger }
+
+func StdLogger(l *slog.Logger) *log.Logger {
+	return slog.NewLogLogger(l.Handler(), slog.LevelInfo)
 }

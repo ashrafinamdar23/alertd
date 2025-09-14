@@ -8,6 +8,7 @@ import (
 
 	"github.com/ashrafinamdar23/alertd/pkg/config"
 	"github.com/ashrafinamdar23/alertd/pkg/deps"
+	h "github.com/ashrafinamdar23/alertd/pkg/httpserver/handlers"
 	"github.com/ashrafinamdar23/alertd/pkg/logx"
 	"github.com/ashrafinamdar23/alertd/pkg/ui"
 	"github.com/ashrafinamdar23/alertd/pkg/version"
@@ -44,7 +45,8 @@ func New(d *deps.Deps) *Server {
 
 	// Reserve API namespace now (we'll add handlers later)
 	api := r.Group("/api/v1")
-	_ = api // placeholder to avoid unused var for now
+	h.RegisterCustomers(api, d)
+	// _ = api // placeholder to avoid unused var for now
 	d.Log.Info("api group ready", "base", "/api/v1")
 
 	api.GET("/version", func(c *gin.Context) {

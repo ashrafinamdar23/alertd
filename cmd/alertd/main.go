@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/ashrafinamdar23/alertd/pkg/config"
+	"github.com/ashrafinamdar23/alertd/pkg/deps"
 	"github.com/ashrafinamdar23/alertd/pkg/httpserver"
 	"github.com/ashrafinamdar23/alertd/pkg/logx"
 )
@@ -31,7 +32,15 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	srv := httpserver.New(cfg, logger)
+	d, err := deps.New(ctx, cfg)
+	if err != nil {
+		log.Fatalf("deps init: %v", err)
+	}
+	defer d.Close()
+
+	d.Log.Info("starting alertd", "env", d.Cfg.App.Env, "addr", d.Cfg.App.HTTPAddr)
+
+	srv := httpserver.New(d)
 
 	// Start HTTP
 	go func() {

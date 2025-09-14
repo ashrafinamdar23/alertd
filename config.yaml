@@ -1,7 +1,15 @@
 app:
-  env: dev            # dev|prod
-  http_addr: ":8080"  # listen address
+  env: dev
+  http_addr: ":8080"
 
 log:
-  level: info         # debug|info|warn|error
-  format: json        # json|text
+  level: info
+  format: json
+
+db:
+  driver: mysql
+  dsn: "mscoe:Secret1.0@tcp(127.0.0.1:3306)/alertd?parseTime=true&charset=utf8mb4&loc=UTC"
+  max_open_conns: 25
+  max_idle_conns: 25
+  conn_max_lifetime: "30m"
+  conn_max_idle_time: "10m"

@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"os"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -16,6 +17,17 @@ type Config struct {
 		Level  string `yaml:"level"`  // debug|info|warn|error
 		Format string `yaml:"format"` // json|text
 	} `yaml:"log"`
+	DB struct {
+		Driver          string `yaml:"driver"` // mysql
+		DSN             string `yaml:"dsn"`
+		MaxOpenConns    int    `yaml:"max_open_conns"`
+		MaxIdleConns    int    `yaml:"max_idle_conns"`
+		ConnMaxLifetime string `yaml:"conn_max_lifetime"`  // e.g. "30m"
+		ConnMaxIdleTime string `yaml:"conn_max_idle_time"` // e.g. "10m"
+	} `yaml:"db"`
+	// Parsed durations (not in YAML)
+	DBConnMaxLifetime time.Duration `yaml:"-"`
+	DBConnMaxIdleTime time.Duration `yaml:"-"`
 }
 
 func defaults(c *Config) {
@@ -31,6 +43,24 @@ func defaults(c *Config) {
 	if c.Log.Format == "" {
 		c.Log.Format = "json"
 	}
+	if c.DB.Driver == "" {
+		c.DB.Driver = "mysql"
+	}
+	if c.DB.DSN == "" {
+		c.DB.DSN = "alertd:alertd@tcp(127.0.0.1:3306)/alertd?parseTime=true&charset=utf8mb4&loc=UTC"
+	}
+	if c.DB.MaxOpenConns == 0 {
+		c.DB.MaxOpenConns = 25
+	}
+	if c.DB.MaxIdleConns == 0 {
+		c.DB.MaxIdleConns = 25
+	}
+	if c.DB.ConnMaxLifetime == "" {
+		c.DB.ConnMaxLifetime = "30m"
+	}
+	if c.DB.ConnMaxIdleTime == "" {
+		c.DB.ConnMaxIdleTime = "10m"
+	}
 }
 
 func validate(c *Config) error {
@@ -44,6 +74,20 @@ func validate(c *Config) error {
 	default:
 		return errors.New("log.format must be one of: json|text")
 	}
+
+	if c.DB.Driver != "mysql" {
+		return errors.New("db.driver must be 'mysql'")
+	}
+	lft, err := time.ParseDuration(c.DB.ConnMaxLifetime)
+	if err != nil {
+		return err
+	}
+	idt, err := time.ParseDuration(c.DB.ConnMaxIdleTime)
+	if err != nil {
+		return err
+	}
+	c.DBConnMaxLifetime = lft
+	c.DBConnMaxIdleTime = idt
 	return nil
 }
 

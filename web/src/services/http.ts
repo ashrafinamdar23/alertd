@@ -12,16 +12,21 @@ export const api = axios.create({
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    const msg = err?.response
-      ? `HTTP ${err.response.status}: ${
-          typeof err.response.data === "string"
-            ? err.response.data
-            : JSON.stringify(err.response.data)
-        }`
-      : err?.request
-      ? "Network error or timeout"
-      : err?.message || "Unknown error";
-    return Promise.reject(new Error(msg));
+    const status = err?.response?.status;
+    let detail = "Network error or timeout";
+    if (err?.response) {
+      const data = err.response.data;
+      detail =
+        typeof data === "string"
+          ? data
+          : data?.error || data?.message || JSON.stringify(data);
+    } else if (err?.message) {
+      detail = err.message;
+    }
+    const e = new Error(`${detail}${status ? ` (${status})` : ""}`);
+    (e as any).status = status;
+    (e as any).data = err?.response?.data;
+    return Promise.reject(e);
   }
 );
 

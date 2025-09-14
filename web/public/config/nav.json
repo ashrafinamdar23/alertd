@@ -2,10 +2,10 @@
   { "label": "Dashboard", "path": "/", "icon": "HomeOutlined" },
   { "label": "Incidents", "path": "/incidents", "icon": "AlertOutlined" },
   {
-    "label": "Rules",
+    "label": "Configuration",
     "icon": "SettingOutlined",
     "children": [
-      { "label": "Routing Rules", "path": "/rules/routing" },
+      { "label": "Customers", "path": "/customers", "icon": "TeamOutlined" },
       { "label": "Suppressions", "path": "/rules/suppressions" },
       { "label": "Notification Endpoints", "path": "/endpoints" }
     ]

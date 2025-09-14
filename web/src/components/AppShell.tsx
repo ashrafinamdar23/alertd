@@ -6,6 +6,7 @@ import {
   SettingOutlined,
   BranchesOutlined,
   FileTextOutlined,
+  TeamOutlined,
 } from "@ant-design/icons";
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -25,6 +26,7 @@ const ICONS: Record<string, React.ReactNode> = {
   SettingOutlined: <SettingOutlined />,
   BranchesOutlined: <BranchesOutlined />,
   FileTextOutlined: <FileTextOutlined />,
+  TeamOutlined: <TeamOutlined />,     // +++
 };
 
 function toMenuItems(nodes: NavNode[]): MenuProps["items"] {

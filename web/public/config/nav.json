@@ -19,5 +19,14 @@
       { "label": "Email/IMAP", "path": "/sources/email" }
     ]
   },
-  { "label": "Reports", "path": "/reports", "icon": "FileTextOutlined" }
+  { "label": "Reports", "path": "/reports", "icon": "FileTextOutlined" },
+  {
+    "label": "System",
+    "icon": "SettingOutlined",
+    "children": [
+      { "label": "Version",   "path": "/system/version" },
+      { "label": "Status",    "path": "/system/status" },
+      { "label": "Readiness", "path": "/system/readiness" }
+    ]
+  }
 ]

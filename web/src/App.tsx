@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { message, Spin } from "antd";
 import AppShell from "./components/AppShell";
 import type { NavNode } from "./components/AppShell";
+import { SystemVersion, SystemStatus, SystemReadiness } from "./pages/system";
 
 function Dashboard() { return <div style={{ padding: 24 }}><h1>Dashboard</h1></div>; }
 function Incidents() { return <div style={{ padding: 24 }}><h1>Incidents</h1></div>; }
@@ -42,6 +43,9 @@ export default function App() {
         <Route path="/sources/webhook" element={<Placeholder title="Webhook" />} />
         <Route path="/sources/email" element={<Placeholder title="Email/IMAP" />} />
         <Route path="/reports" element={<Placeholder title="Reports" />} />
+        <Route path="/system/version" element={<SystemVersion />} />
+        <Route path="/system/status" element={<SystemStatus />} />
+        <Route path="/system/readiness" element={<SystemReadiness />} />
       </Routes>
     </AppShell>
   );

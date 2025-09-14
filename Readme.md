@@ -1,10 +1,10 @@
-Build UI
-cd web
-npm install
-npm run build
+
+PowerShell 
+
+.\build.ps1 -os windows -arch amd64
+.\build.ps1 -os linux   -arch arm64  -version v0.1.1
 
 
+Execute
 
-$env:CGO_ENABLED = "0"
-go build -trimpath -ldflags "-s -w" -o bin/alertd.exe ./cmd/alertd
-.\bin\alertd.exe -config .\config.yaml
+./bin/alertd/exe -config ./config.yaml

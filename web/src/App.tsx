@@ -11,19 +11,20 @@ function Placeholder({ title }: { title: string }) { return <div style={{ paddin
 export default function App() {
   const [nav, setNav] = useState<NavNode[] | null>(null);
 
-  useEffect(() => {
-    fetch("/config/nav.json")
-      .then((r) => {
-        if (!r.ok) throw new Error(`nav load failed: ${r.status}`);
-        return r.json();
-      })
-      .then((json) => setNav(json))
-      .catch((err) => {
-        console.error(err);
-        message.error("Failed to load navigation");
-        setNav([]); // render shell anyway
-      });
-  }, []);
+ useEffect(() => {
+  const NAV_URL = "/app/config/nav.json";   // absolute to the app mount
+  fetch(NAV_URL)
+    .then((r) => {
+      if (!r.ok) throw new Error(`nav load failed: ${r.status}`);
+      return r.json();
+    })
+    .then(setNav)
+    .catch((err) => {
+      console.error(err);
+      message.error("Failed to load navigation");
+      setNav([]);
+    });
+}, []);
 
   if (nav === null) {
     return <div style={{ display: "grid", placeItems: "center", minHeight: "100vh" }}><Spin /></div>;

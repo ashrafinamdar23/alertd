@@ -8,6 +8,8 @@ import (
 
 	"github.com/ashrafinamdar23/alertd/pkg/config"
 	"github.com/ashrafinamdar23/alertd/pkg/logx"
+	"github.com/ashrafinamdar23/alertd/pkg/ui"
+	"github.com/ashrafinamdar23/alertd/pkg/version"
 	"github.com/gin-gonic/gin"
 )
 
@@ -27,6 +29,27 @@ func New(cfg *config.Config, logger *slog.Logger) *Server {
 
 	// Health
 	r.GET("/healthz", func(c *gin.Context) { c.String(http.StatusOK, "ok") })
+	r.GET("/readyz", func(c *gin.Context) { c.String(http.StatusOK, "ready") })
+
+	// --- Mount UI last (at "/") ---
+	// ui.Register(r, "/")
+	r.GET("/", func(c *gin.Context) {
+		c.Redirect(http.StatusFound, "/app")
+	})
+
+	// Reserve API namespace now (we'll add handlers later)
+	api := r.Group("/api/v1")
+	_ = api // placeholder to avoid unused var for now
+
+	api.GET("/version", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"version": version.Version,
+			"commit":  version.Commit,
+			"builtAt": version.BuiltAt,
+		})
+	})
+
+	ui.Register(r)
 
 	return &Server{
 		srv: &http.Server{

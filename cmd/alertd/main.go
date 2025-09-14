@@ -2,37 +2,53 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/ashrafinamdar23/alertd/pkg/config"
 	"github.com/ashrafinamdar23/alertd/pkg/httpserver"
+	"github.com/ashrafinamdar23/alertd/pkg/logx"
 )
 
 func main() {
+
+	var cfgPath string
+	flag.StringVar(&cfgPath, "config", "config.yaml", "path to config.yaml")
+	flag.Parse()
+
+	cfg, err := config.Load(cfgPath)
+	if err != nil {
+		log.Fatalf("load config: %v", err)
+	}
+
+	logger := logx.New(cfg)
+	logger.Info("starting alertd", "env", cfg.App.Env, "addr", cfg.App.HTTPAddr)
+
 	// Graceful shutdown with SIGINT/SIGTERM
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	srv := httpserver.New(":8080")
+	srv := httpserver.New(cfg, logger)
 
 	// Start HTTP
 	go func() {
 		if err := srv.Start(); err != nil && err.Error() != "http: Server closed" {
-			log.Fatalf("http server error: %v", err)
+			logger.Error("http server error", "err", err)
 		}
 	}()
 
 	// Wait for signal
 	<-ctx.Done()
-	log.Println("shutdown signal received")
+	logger.Info("shutdown signal received")
 
 	// Graceful stop
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := srv.Stop(shutdownCtx); err != nil {
-		log.Printf("graceful stop error: %v", err)
+		logger.Error("graceful stop error", "err", err)
 	}
-	log.Println("bye 👋")
+	logger.Info("alertd has been stopped")
 }

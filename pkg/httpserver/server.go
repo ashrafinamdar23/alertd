@@ -2,9 +2,12 @@ package httpserver
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"time"
 
+	"github.com/ashrafinamdar23/alertd/pkg/config"
+	"github.com/ashrafinamdar23/alertd/pkg/logx"
 	"github.com/gin-gonic/gin"
 )
 
@@ -12,22 +15,22 @@ type Server struct {
 	srv *http.Server
 }
 
-func New(addr string) *Server {
+func New(cfg *config.Config, logger *slog.Logger) *Server {
+	// Gin mode from env
+	if cfg.App.Env == "prod" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 	r := gin.New()
-	// Middleware stack
-	r.Use(gin.Recovery()) // panic safety
-	r.Use(gin.Logger())   // basic request logs (swap to slog later)
+	r.Use(gin.Recovery())
+	r.Use(logx.Gin(logger))
 
-	// Basic health
+	// Health
 	r.GET("/healthz", func(c *gin.Context) { c.String(http.StatusOK, "ok") })
-
-	// API versioning scaffold (we’ll add routes later)
-	v1 := r.Group("/v1")
-	_ = v1 // placeholder
 
 	return &Server{
 		srv: &http.Server{
-			Addr:              addr,
+			Addr:              cfg.App.HTTPAddr,
 			Handler:           r,
 			ReadHeaderTimeout: 5 * time.Second,
 		},

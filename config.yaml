@@ -1,0 +1,7 @@
+app:
+  env: dev            # dev|prod
+  http_addr: ":8080"  # listen address
+
+log:
+  level: info         # debug|info|warn|error
+  format: json        # json|text

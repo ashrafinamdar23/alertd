@@ -7,6 +7,20 @@ public sealed class DataTableModel
     public bool Hover { get; set; } = false;
     public bool Center { get; set; } = true;
 
+    // NEW: used by the VC for the card header
+    public string? Title { get; set; }
+    public DataTableHeaderAction? HeaderAction { get; set; }
+
+    // NEW: used by the VC to render the pager row
+    public DataTablePagination? Pager { get; set; }
+
+    // Add full borders via VC when true (VC can toggle table-bordered)
+    public bool Bordered { get; set; } = true;
+
+    // Control Actions column UI
+    public string? ActionsHeader { get; set; } = null;      // e.g., "Actions"
+    public string? ActionsColumnWidth { get; set; } = "160px";
+
     public List<DataTableColumn> Columns { get; set; } = new();
     public List<DataTableRow> Rows { get; set; } = new();
 }
@@ -26,6 +40,26 @@ public sealed class DataTableRow
     /// <summary>Map of cell key -> string html/text</summary>
     public Dictionary<string, string> Cells { get; set; } = new();
     public List<DataTableAction> Actions { get; set; } = new(); // optional
+
+    // Optional: per-row styling/attrs if you later need them
+    public string? RowClass { get; set; }
+    public Dictionary<string, string>? DataAttributes { get; set; }
+}
+
+public sealed class DataTableHeaderAction
+{
+    public string Text { get; set; } = "Add";
+    public string Href { get; set; } = "#";
+    public string Class { get; set; } = "btn btn-primary";
+    public string? IconClass { get; set; } // e.g. "bi bi-plus"
+}
+
+public sealed class DataTablePagination
+{
+    public int Page { get; set; } = 1;
+    public int PageSize { get; set; } = 10;
+    public int TotalItems { get; set; } = 0;
+    public string QueryParam { get; set; } = "page";
 }
 
 public enum DataTableActionType { Link, Post }
@@ -53,4 +87,7 @@ public sealed class DataTableAction
 
     // ---- New (optional): HTTP method hint for fetch-based actions (e.g., "POST", "DELETE") ----
     public string? Method { get; set; }
+    public bool Disabled { get; set; } = false; // if you want to gray-out buttons conditionally
+
+
 }

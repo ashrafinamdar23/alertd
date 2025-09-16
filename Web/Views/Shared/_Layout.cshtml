@@ -21,6 +21,8 @@
     @await Component.InvokeAsync("ToastHost")
     @await Component.InvokeAsync("ConfirmModal")
 
+    <div class="d-none">@Html.AntiForgeryToken()</div>
+
     <main role="main" class="app-content">
         <div class="container py-4">
             @RenderBody()

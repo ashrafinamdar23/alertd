@@ -46,6 +46,11 @@ func New(d *deps.Deps) *Server {
 	// Reserve API namespace now (we'll add handlers later)
 	api := r.Group("/api/v1")
 	h.RegisterCustomers(api, d)
+	h.RegisterUISchema(api, d)
+	h.RegisterUISchemaAdmin(api, d) // POST creates/fields/activate
+
+	h.RegisterUIForm(api, d)      // GET /api/v1/schema/form
+	h.RegisterUIFormAdmin(api, d) // POST admin endpoints
 	// _ = api // placeholder to avoid unused var for now
 	d.Log.Info("api group ready", "base", "/api/v1")
 

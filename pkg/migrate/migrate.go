@@ -97,11 +97,63 @@ func loadApplied(ctx context.Context, db *sql.DB) (map[string]bool, error) {
 	return m, rows.Err()
 }
 
+func stripSQLComments(s string) string {
+	// remove -- line comments and /* ... */ block comments, keep strings
+	var b strings.Builder
+	inSingle, inDouble, inLine, inBlock := false, false, false, false
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		next := byte(0)
+		if i+1 < len(s) {
+			next = s[i+1]
+		}
+
+		if inLine {
+			if c == '\n' {
+				inLine = false
+				b.WriteByte(c)
+			}
+			continue
+		}
+		if inBlock {
+			if c == '*' && next == '/' {
+				inBlock = false
+				i++ // skip '/'
+			}
+			continue
+		}
+
+		if !inSingle && !inDouble {
+			// start of -- line comment
+			if c == '-' && next == '-' {
+				inLine = true
+				i++ // skip second '-'
+				continue
+			}
+			// start of /* block comment */
+			if c == '/' && next == '*' {
+				inBlock = true
+				i++ // skip '*'
+				continue
+			}
+		}
+
+		if c == '\'' && !inDouble {
+			inSingle = !inSingle
+		} else if c == '"' && !inSingle {
+			inDouble = !inDouble
+		}
+		b.WriteByte(c)
+	}
+	return b.String()
+}
+
 func splitSQL(s string) []string {
-	raw := strings.Split(s, ";")
-	out := make([]string, 0, len(raw))
-	for _, r := range raw {
-		stmt := strings.TrimSpace(r)
+	clean := stripSQLComments(s)
+	parts := strings.Split(clean, ";")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		stmt := strings.TrimSpace(p)
 		if stmt != "" {
 			out = append(out, stmt)
 		}

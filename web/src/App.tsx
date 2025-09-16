@@ -5,6 +5,8 @@ import AppShell from "./components/AppShell";
 import type { NavNode } from "./components/AppShell";
 import { SystemVersion, SystemStatus, SystemReadiness } from "./pages/system";
 import CustomersList from "./pages/customers/List";
+import AdminUISchemaList from "./pages/admin/ui-schemas/List";
+import AdminUISchemaFields from "./pages/admin/ui-schemas/Fields";
 
 function Dashboard() { return <div style={{ padding: 24 }}><h1>Dashboard</h1></div>; }
 function Incidents() { return <div style={{ padding: 24 }}><h1>Incidents</h1></div>; }
@@ -48,6 +50,8 @@ export default function App() {
         <Route path="/system/status" element={<SystemStatus />} />
         <Route path="/system/readiness" element={<SystemReadiness />} />
         <Route path="/customers" element={<CustomersList />} />
+        <Route path="/admin/ui-schemas" element={<AdminUISchemaList />} />
+        <Route path="/admin/ui-schemas/:id/fields" element={<AdminUISchemaFields />} />
       </Routes>
     </AppShell>
   );

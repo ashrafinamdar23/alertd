@@ -1,112 +1,123 @@
 import { useCallback, useState } from "react";
-import { message } from "antd";
-import Container from "../../components/Container";
-import ModelList from "../../components/ModelList";
-import type { ColumnsType } from "antd/es/table";
-import { CustomersAPI, type Customer } from "../../services/customers";
-import CoeModal from "../../components/CoeModal";
+import ResourceList from "../_shared/ResourceList";
+import { CustomersAPI } from "../../services/customers";
+import { SchemaAPI, type FormSchemaDTO } from "../../services/schema";
 import CoeForm, { type Field } from "../../components/CoeForm";
-import { Form } from "antd";
+import CoeModal from "../../components/CoeModal";
 import { toast } from "../../stores/toast";
 
-const columns: ColumnsType<Customer> = [
-  { title: "ID", dataIndex: "id", width: 100 },
-  { title: "Name", dataIndex: "name" },
-  {
-    title: "Created",
-    dataIndex: "createdAt",
-    render: (v: string) => new Date(v).toLocaleString(),
-    width: 200,
-  },
-];
+function mapFormToCoeFields(fs: FormSchemaDTO): Field[] {
+  return fs.fields
+    .filter((f) => f)
+    .sort((a, b) => a.orderNo - b.orderNo)
+    .map<Field>((f) => {
+      const base = { name: f.name, label: f.label, required: f.required } as any;
+      const rules = [];
+      if (f.maxLen) rules.push({ max: f.maxLen });
+      if (f.minLen) rules.push({ min: f.minLen });
+      if (f.pattern) rules.push({ pattern: new RegExp(f.pattern) });
 
-const createSchema: Field[] = [
-  {
-    name: "name",
-    label: "Name",
-    widget: "input",
-    required: true,
-    rules: [{ max: 255, message: "Max 255 characters" }],
-    props: { autoFocus: true, placeholder: "Acme Corp" },
-  },
-];
+      if (f.widget === "select") {
+        return {
+          ...base,
+          widget: "select",
+          options: (f.options || []).map((o) => ({ label: o.label, value: o.value })),
+          rules,
+          props: { placeholder: f.placeholder },
+        };
+      }
+
+      const widgetMap: Record<string, Field["widget"]> = {
+        input: "input",
+        number: "number",
+        switch: "switch",
+        date: "date",
+        datetime: "datetime",
+        textarea: "textarea",
+        password: "password",
+        email: "email",
+      };
+      const widget = widgetMap[f.widget] || "input";
+      return { ...base, widget, rules, props: { placeholder: f.placeholder } } as Field;
+    });
+}
 
 export default function CustomersList() {
-  const [open, setOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [form] = Form.useForm<{ name: string }>();
-
+  // list fetcher
   const fetchList = useCallback(
-    (params: { limit?: number; offset?: number; q?: string }) =>
-      CustomersAPI.list(params),
+    (params: { limit?: number; offset?: number; q?: string }) => CustomersAPI.list(params),
     []
   );
 
+  // parent-controlled reload signal (used to refresh ResourceList after create)
   const [reloadSignal, setReloadSignal] = useState(0);
   const triggerReload = () => setReloadSignal((x) => x + 1);
 
-  const onAdd = () => {
-    setFormError(null);
-    form.resetFields();
-    setOpen(true);
+  // runtime form schema state
+  const [open, setOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [formFields, setFormFields] = useState<Field[] | null>(null);
+
+  const onAdd = async () => {
+    try {
+      const fs = await SchemaAPI.getFormSchema("customer", "create");
+      setFormFields(mapFormToCoeFields(fs));
+      setOpen(true);
+    } catch (e: any) {
+      toast.error(e?.message || "No active create form schema");
+    }
   };
 
-  const submitCreate = async (values: { name: string }) => {
+  const submitCreate = async (values: Record<string, any>) => {
     setSubmitting(true);
-    setFormError(null);
     try {
-      await CustomersAPI.create({ name: values.name.trim() });
-      message.success("Customer created");
+      // minimal payload for now
+      await CustomersAPI.create({ name: String(values.name || "").trim() });
       toast.success("Customer created");
       setOpen(false);
-      triggerReload();
+      triggerReload(); // refresh list
     } catch (e: any) {
-      const status = e?.status as number | undefined;
-      const msg = e?.message as string | undefined;
-      if (status === 409) {
-        form.setFields([{ name: "name", errors: ["Customer already exists"] }]);
-        message.warning("Customer already exists");
-        toast.warning("Customer already exists");
-      } else if (status === 400) {
-        setFormError("Invalid input. Please check the form.");
-        message.error("Validation error");
-      } else {
-        setFormError(msg || "Create failed");
-        message.error(msg || "Create failed");
-        toast.error(msg || "Create failed");
-      }
+      toast.error(e?.message || "Create failed");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <Container maxWidth={960}>
-      <ModelList<Customer>
+    <>
+      <ResourceList<any>
+        model="customer"
         title="Customers"
-        columns={columns}
         fetchList={fetchList}
-        addLabel="New Customer"
-        onAdd={onAdd}
-        reloadSignal={reloadSignal}
+        create={undefined}          // we're managing the modal ourselves
+        reloadSignal={reloadSignal} // <-- wire the reload signal
       />
 
       <CoeModal
         title="New Customer"
         open={open}
-        onOk={() => form.submit()}
+        onOk={() =>
+          (document.querySelector("form") as HTMLFormElement)?.dispatchEvent(
+            new Event("submit", { cancelable: true, bubbles: true })
+          )
+        }
         onCancel={() => setOpen(false)}
         okText="Create"
         confirmLoading={submitting}
       >
-        <CoeForm
-          form={form}
-          schema={createSchema}
-          errorText={formError}
-          onSubmit={submitCreate}
-        />
+        {formFields ? (
+          <CoeForm schema={formFields} onSubmit={submitCreate} />
+        ) : (
+          <div>Loading form...</div>
+        )}
       </CoeModal>
-    </Container>
+
+      {/* Temporary FAB to open the modal; optionally move into ResourceList header later */}
+      <div style={{ position: "fixed", right: 16, bottom: 16 }}>
+        <button className="ant-btn ant-btn-primary" onClick={onAdd}>
+          New Customer
+        </button>
+      </div>
+    </>
   );
 }

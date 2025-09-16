@@ -32,13 +32,19 @@
                 },
                 new DataTableAction
                 {
-                    Type = DataTableActionType.Post,
-                    Text = "Delete",
+                    Type  = DataTableActionType.Link,
+                    Text  = "Delete",
                     Class = "btn btn-outline-danger btn-sm",
-                    FormAction = Url.Action("Delete","Customers", new { id = c.Id }),
-                    ConfirmTitle = "Delete customer",
-                    ConfirmBody  = "This cannot be undone.",
-                    Hidden = null
+                    Href  = Url.Action("Delete","Customers", new { id = c.Id }),
+                    Method = "POST",
+                    DataAttributes = new Dictionary<string,string>
+                    {
+                        ["data-coe-delete"] = "true",
+                        ["data-name"] = c.Name,
+                        ["data-coe-confirm-title"] = "Delete customer",
+                        ["data-coe-confirm-body"]  = "This cannot be undone.",
+                        ["data-coe-confirm-class"] = "btn-danger"
+                    }
                 }
             }
         });

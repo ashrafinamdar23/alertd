@@ -33,7 +33,7 @@
         toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove(), { once: true });
     }
 
-    // --- Confirm modal (returns Promise<boolean>) ---
+    // --- Confirm modal (Promise<boolean>) ---
     function confirmModal({ title = "Confirm", body = "Are you sure?", confirmText = "Confirm", confirmClass = "btn-danger", cancelText = "Cancel" } = {}) {
         if (!ensureBootstrap()) return Promise.resolve(false);
         /** @type {HTMLTemplateElement|null} */
@@ -67,14 +67,11 @@
 
     // Expose helpers
     w.CoeUI = { showToast, confirmModal };
-    // Also provide globals for convenience
     w.showToast = showToast;
     w.confirmModal = confirmModal;
-
 })(window);
 
-
-// --- Coe.UI: handle data-coe-post buttons inside DataTable ---
+// --- Existing data-coe-post handler (kept; just TS fix on error path)
 document.addEventListener('click', async function (e) {
     const target = /** @type {HTMLElement} */ (e.target);
     const btn = target && target.closest ? target.closest('button[data-coe-post]') : null;
@@ -100,8 +97,7 @@ document.addEventListener('click', async function (e) {
     form.submit();
 });
 
-
-// --- AJAX form submit for Coe.UI forms ---
+// --- AJAX form submit for Coe.UI forms (unchanged, TS fix in catch)
 document.addEventListener('submit', async function (e) {
     const form = e.target instanceof HTMLFormElement ? e.target : null;
     if (!form) return;
@@ -129,12 +125,10 @@ document.addEventListener('submit', async function (e) {
                 if (data?.message) { window.showToast?.({ title: 'Success', body: String(data.message), variant: 'success' }); }
                 return;
             }
-            // Non-JSON success: just reload/redirect to action's redirect
             window.location.reload();
             return;
         }
 
-        // Error
         let msg = `Request failed (${res.status})`;
         if (ct.includes('application/json')) {
             const data = await res.json().catch(() => null);
@@ -146,7 +140,6 @@ document.addEventListener('submit', async function (e) {
         window.showToast?.({ title: 'Error', body: msg, variant: 'danger' });
         if (summary) summary.textContent = msg;
     } catch (err) {
-        //  TS-ism removed: (err as any).message -> safe JS access
         const msg = (err && err.message) ? err.message : 'Network error';
         window.showToast?.({ title: 'Error', body: msg, variant: 'danger' });
         const summary = form.querySelector('[data-coe-val-summary]');
@@ -154,43 +147,35 @@ document.addEventListener('submit', async function (e) {
     }
 });
 
-
-// --- Row Delete via fetch (works even without a <form>) ---
+// --- Row Delete via fetch (no per-row <form>)
 (function () {
     function getRequestVerificationToken() {
         const el = document.querySelector('input[name="__RequestVerificationToken"]');
         return el ? el.value : null;
     }
-
-    async function askConfirm(title, body, confirmText, confirmClass) {
-        if (window.confirmModal) {
-            return await window.confirmModal({
-                title: title || 'Confirm delete',
-                body: body || '',
-                confirmText: confirmText || 'Delete',
-                confirmClass: confirmClass || 'btn-danger'
-            });
-        }
-        return window.confirm(title || 'Confirm delete');
+    async function askConfirm(opts) {
+        return window.confirmModal ? await window.confirmModal(opts) : window.confirm(opts.title || 'Confirm');
     }
 
     document.addEventListener('click', async (e) => {
-        const target = /** @type {HTMLElement} */ (e.target);
-        const del = target && target.closest ? target.closest('[data-coe-delete]') : null;
+        const t = /** @type {HTMLElement} */(e.target);
+        const del = t && t.closest ? t.closest('[data-coe-delete]') : null;
         if (!del) return;
 
         e.preventDefault();
 
         const url = del.getAttribute('data-url') || del.getAttribute('href');
-        if (!url) return;
-
         const name = del.getAttribute('data-name') || 'this item';
         const title = del.getAttribute('data-coe-confirm-title') || `Delete ${name}?`;
         const body = del.getAttribute('data-coe-confirm-body') || '';
         const ccls = del.getAttribute('data-coe-confirm-class') || 'btn-danger';
         const method = (del.getAttribute('data-method') || 'POST').toUpperCase();
 
-        const ok = await askConfirm(title, body, (del.textContent || '').trim() || 'Delete', ccls);
+        const ok = await askConfirm({
+            title, body,
+            confirmText: (del.textContent || '').trim() || 'Delete',
+            confirmClass: ccls
+        });
         if (!ok) return;
 
         const token = getRequestVerificationToken();
@@ -198,21 +183,13 @@ document.addEventListener('submit', async function (e) {
         if (token) headers['RequestVerificationToken'] = token;
 
         try {
-            const res = await fetch(url, {
-                method,
-                headers,
-                credentials: 'same-origin'
-            });
-
+            const res = await fetch(url, { method, headers, credentials: 'same-origin' });
             const ct = res.headers.get('content-type') || '';
             if (res.ok) {
                 if (ct.includes('application/json')) {
                     const data = await res.json().catch(() => ({}));
                     if (data?.message) window.showToast?.({ title: 'Success', body: String(data.message), variant: 'success' });
                     if (data?.redirect) { window.location.assign(data.redirect); return; }
-                    // default: reload to reflect row removal
-                    window.location.reload();
-                    return;
                 }
                 window.location.reload();
                 return;
@@ -224,7 +201,7 @@ document.addEventListener('submit', async function (e) {
                 msg = data?.error || data?.message || msg;
             } else {
                 const txt = await res.text();
-                if (txt) msg = txt.substring(0, 500);
+                if (txt) msg = txt.slice(0, 500);
             }
             window.showToast?.({ title: 'Error', body: msg, variant: 'danger' });
         } catch (err) {

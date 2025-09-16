@@ -1,9 +1,38 @@
 ﻿@model Coe.UI.Models.DataTableModel
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@using System.Text.Encodings.Web
 
 @{
     var tableClasses = "table table-sm " + (Model.Striped ? "table-striped " : "") + (Model.Center ? "text-center " : "") + (Model.Hover ? "table-hover " : "");
 }
+
+@functions {
+    // Helper to render arbitrary data-* attributes safely from the model
+    string DataAttrs(System.Collections.Generic.IDictionary<string, string>? data, string? method = null)
+    {
+        if (data is null && string.IsNullOrWhiteSpace(method)) return "";
+        var sb = new System.Text.StringBuilder();
+        if (data != null)
+        {
+            foreach (var kv in data)
+            {
+                sb.Append(' ')
+                  .Append(HtmlEncoder.Default.Encode(kv.Key))
+                  .Append("=\"")
+                  .Append(HtmlEncoder.Default.Encode(kv.Value))
+                  .Append('"');
+            }
+        }
+        if (!string.IsNullOrWhiteSpace(method))
+        {
+            sb.Append(" data-method=\"")
+              .Append(HtmlEncoder.Default.Encode(method))
+              .Append('"');
+        }
+        return sb.ToString();
+    }
+}
+
 <div class="table-responsive">
     <table class="@tableClasses">
         <thead>
@@ -30,16 +59,24 @@
 
                     @if (row.Actions?.Count > 0)
                     {
-                        <td class="text-end">
+                        <td class="text-end text-nowrap">
                             @foreach (var a in row.Actions)
                             {
                                 if (a.Type == Coe.UI.Models.DataTableActionType.Link && !string.IsNullOrWhiteSpace(a.Href))
                                 {
-                                    <a class="@a.Class" href="@a.Href">@a.Text</a>
+                                    // LINK ACTION: now supports data-* attributes (e.g., data-coe-delete, data-method)
+                                    <a class="@a.Class"
+                                       href="@a.Href"
+                                       @Html.Raw(DataAttrs(a.DataAttributes, a.Method))>
+                                        @a.Text
+                                    </a>
                                 }
                                 else if (a.Type == Coe.UI.Models.DataTableActionType.Post && !string.IsNullOrWhiteSpace(a.FormAction))
                                 {
+                                    // POST ACTION: include antiforgery token so direct form submits pass validation
                                     <form method="post" action="@a.FormAction" class="d-inline">
+                                        @Html.AntiForgeryToken()
+
                                         @* Hidden fields *@
                                         @if (a.Hidden != null)
                                         {
@@ -48,12 +85,13 @@
                                                 <input type="hidden" name="@kv.Key" value="@kv.Value" />
                                             }
                                         }
+
                                         <button type="button"
                                                 class="@a.Class"
                                                 data-coe-post
                                                 data-coe-confirm-title="@a.ConfirmTitle"
                                                 data-coe-confirm-body="@a.ConfirmBody"
-                                                data-coe-confirm-class="@a.ConfirmClass">
+                                                data-coe-confirm-class="@(a.ConfirmClass ?? "btn-danger")">
                                             @a.Text
                                         </button>
                                     </form>

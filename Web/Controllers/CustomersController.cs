@@ -142,11 +142,44 @@ public sealed class CustomersController(AppDbContext db, ILogger<CustomersContro
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
-        var c = await _db.Customers.FindAsync(id);
-        if (c is null) return NotFound();
-        _db.Customers.Remove(c);
-        await _db.SaveChangesAsync();
-        return Json(new { ok = true, message = $"Deleted '{c.Name}'" });
+        var traceId = HttpContext.TraceIdentifier;
+
+        var entity = await _db.Customers.FindAsync(id);
+        if (entity is null)
+            return NotFound(new { ok = false, error = "Customer not found.", traceId });
+
+        try
+        {
+            _db.Customers.Remove(entity);
+            await _db.SaveChangesAsync();
+
+            // Use TempData so the toast appears after the reload on success
+            TempData["Toast.Success"] = $"Deleted '{entity.Name}'.";
+
+            // Also return a message in case you want to show an immediate toast before reload
+            return Json(new { ok = true, message = $"Deleted '{entity.Name}'" });
+        }
+        // Foreign key constraint (cannot delete parent row)
+        catch (DbUpdateException ex) when (ex.InnerException is MySqlException my && my.Number == 1451)
+        {
+            var msg = $"Cannot delete '{entity.Name}' because it has related data.";
+            _logger.LogWarning(ex, "FK constraint prevent delete: CustomerId={Id}, traceId={TraceId}", id, traceId);
+            return StatusCode(StatusCodes.Status409Conflict, new { ok = false, error = msg, traceId });
+        }
+        // Other EF/db update errors
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(ex, "DbUpdateException deleting CustomerId={Id}, traceId={TraceId}", id, traceId);
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { ok = false, error = "Database error while deleting. Please try again.", traceId });
+        }
+        // Fallback
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error deleting CustomerId={Id}, traceId={TraceId}", id, traceId);
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { ok = false, error = "Unexpected error. Please try again.", traceId });
+        }
     }
 
     private static bool IsUniqueConstraintViolation(DbUpdateException ex)

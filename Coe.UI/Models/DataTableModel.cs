@@ -46,4 +46,11 @@ public sealed class DataTableAction
     public string? ConfirmTitle { get; set; }
     public string? ConfirmBody { get; set; }
     public string? ConfirmClass { get; set; } = "btn-danger";
+
+    
+    // ---- New: arbitrary data-* attributes for Link actions (used by JS handlers) ----
+    public Dictionary<string, string>? DataAttributes { get; set; } = new();
+
+    // ---- New (optional): HTTP method hint for fetch-based actions (e.g., "POST", "DELETE") ----
+    public string? Method { get; set; }
 }

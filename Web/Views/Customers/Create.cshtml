@@ -1,0 +1,42 @@
+﻿@model AlertPortal.Web.ViewModels.CustomerVm
+@using Coe.UI.Models
+@{
+    ViewData["Title"] = "New Customer";
+
+    // Build the reusable form from the current model
+    var form = new FormModel
+    {
+        Action = Url.Action("Create", "Customers")!,
+        Method = "post",
+        Antiforgery = true,
+        UseAjax = false, // set true only if your POST returns JSON with { redirect }
+        Fields =
+        {
+            new FormField {
+                Name = "Name",
+                Label = "Name",
+                Type = FormFieldType.Text,
+                Value = Model?.Name,
+                Placeholder = "Enter customer name",
+                Required = true,
+                MaxLength = 128
+            }
+        },
+        Buttons =
+        {
+            new FormButton { Kind = FormButtonKind.Submit, Text = "Create", Class = "btn btn-primary" },
+            new FormButton { Kind = FormButtonKind.Back,   Text = "Back",   Class = "btn btn-outline-secondary" }
+        }
+    };
+
+    // Surface ModelState errors (e.g., duplicate name) in the component summary
+    var errs = ViewData.ModelState.Values
+        .SelectMany(v => v.Errors)
+        .Select(e => e.ErrorMessage)
+        .Where(s => !string.IsNullOrWhiteSpace(s))
+        .ToList();
+    if (errs.Count > 0) form.Errors = errs;
+}
+<h1 class="h4 mb-3">New Customer</h1>
+
+@await Component.InvokeAsync("Form", form)

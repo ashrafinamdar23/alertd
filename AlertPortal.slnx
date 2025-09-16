@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Coe.UI/Coe.UI.csproj" />
+  <Project Path="Web/Web.csproj" />
+</Solution>

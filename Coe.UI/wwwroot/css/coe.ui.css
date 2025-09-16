@@ -1,0 +1,18 @@
+/* Coe.UI shared styles */
+
+/* Keep toasts above navbars/offcanvas/etc. */
+#coe-toast-host.toast-container {
+    z-index: 1080;
+}
+
+/* Small utility for right-aligned chevrons/icons in menus */
+.submenu-icon {
+    opacity: .65;
+    transition: transform .15s ease;
+}
+
+
+/* Keep actions snug on small tables */
+.table td.text-end .btn {
+    margin-left: .25rem;
+}

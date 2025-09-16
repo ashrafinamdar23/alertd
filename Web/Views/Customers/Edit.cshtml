@@ -1,0 +1,39 @@
+﻿@model AlertPortal.Web.ViewModels.CustomerVm
+@using Coe.UI.Models
+@{
+    ViewData["Title"] = "Edit Customer";
+
+    var form = new FormModel
+    {
+        Action = Url.Action("Edit", "Customers")!,
+        Method = "post",
+        Antiforgery = true,
+        Fields =
+        {
+            new FormField { Name = "Id",   Type = FormFieldType.Hidden, Value = Model.Id.ToString() },
+            new FormField {
+                Name = "Name",
+                Label = "Name",
+                Type = FormFieldType.Text,
+                Value = Model?.Name,
+                Required = true,
+                MaxLength = 128
+            }
+        },
+        Buttons =
+        {
+            new FormButton { Kind = FormButtonKind.Submit, Text = "Save",   Class = "btn btn-primary" },
+            new FormButton { Kind = FormButtonKind.Link,   Text = "Cancel", Class = "btn btn-outline-secondary", Href = Url.Action("Index","Customers") }
+        }
+    };
+
+    var errs = ViewData.ModelState.Values
+        .SelectMany(v => v.Errors)
+        .Select(e => e.ErrorMessage)
+        .Where(s => !string.IsNullOrWhiteSpace(s))
+        .ToList();
+    if (errs.Count > 0) form.Errors = errs;
+}
+<h1 class="h4 mb-3">Edit Customer</h1>
+
+@await Component.InvokeAsync("Form", form)
